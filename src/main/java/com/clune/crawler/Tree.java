@@ -3,6 +3,7 @@
  */
 package com.clune.crawler;
 
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -15,6 +16,12 @@ public class Tree<T> {
 	
 	public Tree(T value, List<Tree<T>> children) {
 		this.value = value;
+		this.children = children;
+	}
+	
+	public Tree(T value) {
+		this.value = value;
+		this.children = new ArrayList<Tree<T>>();
 	}
 
 	public T getValue() {
@@ -23,5 +30,9 @@ public class Tree<T> {
 
 	public List<Tree<T>> getChildren() {
 		return children;
+	}
+	
+	public void addChild(Tree<T> child) {
+		this.children.add(child);
 	}
 }

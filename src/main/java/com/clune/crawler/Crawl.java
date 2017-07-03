@@ -27,36 +27,10 @@ public class Crawl {
 	public static void main(String[] args) {
 		String root = "http://wiprodigital.com";
 		
-		Deque<String> queue = new ArrayDeque<String>();
-		
-		queue.add(root);
-		
-		int i =0;
-		while (!queue.isEmpty() && i++ < 3) {
-			String current = queue.pop();
-			System.out.println("Processing " + current);
-			try {
-				URL url = new URL(current);
-				StringWriter writer = new StringWriter();
-				IOUtils.copy(url.openStream(), writer);
-
-				Pattern pattern = Pattern.compile("href=\"(http://.+?)\"");
-				Matcher match = pattern.matcher(writer.toString());
-
-				while (match.find()) {
-					queue.addLast(match.group(1));
-				}
-			} catch (MalformedURLException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			} catch (IOException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			}
-		}
-		
-		
-
+		Tree<String> tree = Crawler.crawl(root);
+		SiteMapVisitor visitor = new SiteMapVisitor();
+		Algorithms.depthFirstSearch(tree, visitor);
+		System.out.println(visitor.toString());
 	}
 
 }
