@@ -4,17 +4,18 @@
 package com.clune.crawler;
 
 import java.io.IOException;
-import java.io.StringWriter;
 import java.net.MalformedURLException;
-import java.net.URL;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Deque;
+import java.util.HashSet;
 import java.util.List;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
+import java.util.Set;
 
-import org.apache.commons.io.IOUtils;
+import org.jsoup.Jsoup;
+import org.jsoup.nodes.Document;
+import org.jsoup.nodes.Element;
+import org.jsoup.select.Elements;
 
 /**
  * @author andrewclune
@@ -22,33 +23,27 @@ import org.apache.commons.io.IOUtils;
  */
 public class Crawler {
 	
-	public static Tree<String> crawl(String root) {
+	public static Tree<String> crawl(String url) {
 		Deque<Tree<String>> queue = new ArrayDeque<Tree<String>>();
-		Tree<String>  treeRoot = new Tree<String>(root);
+		Tree<String>  treeRoot = new Tree<String>(url);
 		queue.add(treeRoot);
 		
 		// Taboo list
-		List<String> tabooList = new ArrayList<String>();
+		Set<String> visited = new HashSet<String>();
 		
 		int i =0;
 		while (!queue.isEmpty() && i++ < 100) {
 			Tree<String> current = queue.pop();
-			if(tabooList.contains(current.getValue())) {
-				continue;
-			} 
-			tabooList.add(current.getValue());
 			System.out.println("Processing " + current.getValue());
 			
 			try {
-				URL url = new URL(current.getValue());
-				if (url.getHost().equalsIgnoreCase("wiprodigital.com") && isCrawlable(url)) {
-					StringWriter writer = new StringWriter();
-					IOUtils.copy(url.openStream(), writer);
-					Pattern pattern = Pattern.compile("href=\"(http://.+?)\"");
-					Matcher match = pattern.matcher(writer.toString());
-					while (match.find()) {
-						String child = match.group(1);
-						Tree<String> childTree = new Tree<String>(child);
+				Document doc = Jsoup.connect(current.getValue()).get();
+				Elements links = doc.select("a[href]");
+				for(Element link : links) {
+					String childUrl = cleanUrl(link.attr("abs:href"));
+					if (!visited.contains(childUrl)) {
+						visited.add(childUrl);
+						Tree<String> childTree = new Tree<String>(childUrl);
 						current.addChild(childTree);
 						queue.addLast(childTree);
 					}
@@ -65,15 +60,20 @@ public class Crawler {
 		return treeRoot;
 	}
 	
-	private static boolean isCrawlable(URL url) {
-		boolean crawlable = true;
-		String path = url.getPath();
-		
-		if(path.endsWith(".php") || path.endsWith(".css") || path.endsWith(".js")) {
-			crawlable = false;
+	private static String cleanUrl(String urlStr) {
+		String cleanUrl = urlStr;
+		int index = urlStr.lastIndexOf("#");
+		if(index != -1) {
+			cleanUrl = urlStr.substring(0, index);
 		}
 		
-		return crawlable;
+		index = urlStr.lastIndexOf("?");
+		if(index != -1) {
+			cleanUrl = cleanUrl.substring(0, index);
+		}
+		
+		return cleanUrl;
+		
 	}
 
 }
